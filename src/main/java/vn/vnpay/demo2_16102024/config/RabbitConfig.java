@@ -1,4 +1,4 @@
-package vn.vnpay.demo2_new.config;
+package vn.vnpay.demo2_16102024.config;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.DirectExchange;

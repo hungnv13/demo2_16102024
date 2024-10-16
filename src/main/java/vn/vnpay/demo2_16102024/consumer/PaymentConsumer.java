@@ -1,4 +1,4 @@
-package vn.vnpay.demo2_new.consumer;
+package vn.vnpay.demo2_16102024.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -9,10 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import vn.vnpay.demo2_new.config.RabbitConfig;
-import vn.vnpay.demo2_new.constant.ErrorCodeEnum;
-import vn.vnpay.demo2_new.dto.request.PaymentRequest;
-import vn.vnpay.demo2_new.dto.response.PaymentResponse;
+import vn.vnpay.demo2_16102024.config.RabbitConfig;
+import vn.vnpay.demo2_16102024.constant.ErrorCodeEnum;
+import vn.vnpay.demo2_16102024.dto.request.PaymentRequest;
+import vn.vnpay.demo2_16102024.dto.response.PaymentResponse;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

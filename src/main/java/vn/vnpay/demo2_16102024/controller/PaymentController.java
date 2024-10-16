@@ -1,4 +1,4 @@
-package vn.vnpay.demo2_new.controller;
+package vn.vnpay.demo2_16102024.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import vn.vnpay.demo2_new.dto.request.PaymentRequest;
-import vn.vnpay.demo2_new.server.IPaymentService;
+import vn.vnpay.demo2_16102024.dto.request.PaymentRequest;
+import vn.vnpay.demo2_16102024.server.IPaymentService;
 
 
 @RestController

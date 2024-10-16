@@ -1,4 +1,4 @@
-package vn.vnpay.demo2_new.dto.response;
+package vn.vnpay.demo2_16102024.dto.response;
 
 import lombok.Data;
 

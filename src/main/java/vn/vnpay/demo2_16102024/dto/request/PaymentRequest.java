@@ -1,4 +1,4 @@
-package vn.vnpay.demo2_new.dto.request;
+package vn.vnpay.demo2_16102024.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

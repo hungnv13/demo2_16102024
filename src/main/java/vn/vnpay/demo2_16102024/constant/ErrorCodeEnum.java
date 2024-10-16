@@ -1,4 +1,4 @@
-package vn.vnpay.demo2_new.constant;
+package vn.vnpay.demo2_16102024.constant;
 
 public enum ErrorCodeEnum {
     SUCCESS("00", "Thành công"),

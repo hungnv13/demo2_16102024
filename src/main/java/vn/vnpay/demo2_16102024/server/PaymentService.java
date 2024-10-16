@@ -1,4 +1,4 @@
-package vn.vnpay.demo2_new.server;
+package vn.vnpay.demo2_16102024.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,10 +10,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import vn.vnpay.demo2_new.config.RabbitConfig;
-import vn.vnpay.demo2_new.constant.ErrorCodeEnum;
-import vn.vnpay.demo2_new.dto.request.PaymentRequest;
-import vn.vnpay.demo2_new.dto.response.PaymentResponse;
+import vn.vnpay.demo2_16102024.config.RabbitConfig;
+import vn.vnpay.demo2_16102024.constant.ErrorCodeEnum;
+import vn.vnpay.demo2_16102024.dto.request.PaymentRequest;
+import vn.vnpay.demo2_16102024.dto.response.PaymentResponse;
 
 import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
