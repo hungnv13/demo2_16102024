@@ -45,31 +45,32 @@ public class PaymentService implements IPaymentService {
 
     @Override
     public ResponseEntity<?> validatePayment(@Valid PaymentRequest paymentRequest, BindingResult bindingResult) {
-        // Kiểm tra lỗi validate
+        // Handle validation errors
         if (bindingResult.hasErrors()) {
             return handleValidationErrors(bindingResult);
         }
 
-        // Kiểm tra số tiền thực lớn hơn số tiền bị trừ
+        // Check if the real amount is greater than the debit amount
         if (isRealAmountGreaterThanDebitAmount(paymentRequest)) {
-            return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, "Số tiền thực phải nhỏ hơn hoặc bằng số tiền bị trừ.");
+            return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, "The real amount must be less than or equal to the debit amount.");
         }
 
-        // Kiểm tra mã khuyến mãi
+        // Check if the promotion code is required and valid
         if (isPromotionCodeRequired(paymentRequest)) {
-            return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, "Mã khuyến mãi không hợp lệ.");
+            return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, "Invalid promotion code.");
         }
 
+        // Generate today's token key
         String tokenKey = paymentRequest.getTokenKey();
         String todayKey = String.format("token:%s:%s", tokenKey, LocalDate.now().format(DateTimeFormatter.ISO_DATE));
 
-        // Kiểm tra token đã tồn tại trong Redis
+        // Check if the token already exists for today
         if (redisTemplate.hasKey(todayKey)) {
-            logger.warn("TokenKey {} đã tồn tại cho hôm nay", tokenKey);
-            return createErrorResponse(tokenKey, ErrorCodeEnum.TOKEN_EXISTS_ERROR, "TokenKey đã tồn tại.");
+            logger.warn("TokenKey {} already exists for today", tokenKey);
+            return createErrorResponse(tokenKey, ErrorCodeEnum.TOKEN_EXISTS_ERROR, "TokenKey already exists.");
         }
 
-        // Gửi yêu cầu thanh toán đến RabbitMQ
+        // Send the payment request to RabbitMQ and save the token key in Redis
         return sendMessageToQueue(paymentRequest, todayKey);
     }
 
@@ -79,8 +80,8 @@ public class PaymentService implements IPaymentService {
         for (FieldError error : fieldErrors) {
             errors.put(error.getField(), error.getDefaultMessage());
         }
-        logger.warn("Lỗi validate: {}", errors);
-        return createErrorResponse(null, ErrorCodeEnum.VALIDATION_ERROR, "Có lỗi xảy ra trong quá trình validate.");
+        logger.warn("Validation Error: {}", errors);
+        return createErrorResponse(null, ErrorCodeEnum.VALIDATION_ERROR, "Validation error occurred.");
     }
 
     private boolean isRealAmountGreaterThanDebitAmount(PaymentRequest paymentRequest) {
@@ -98,13 +99,13 @@ public class PaymentService implements IPaymentService {
         try {
             String jsonMessage = objectMapper.writeValueAsString(paymentRequest);
             rabbitTemplate.convertAndSend(RabbitConfig.QUEUE_NAME, jsonMessage);
-            logger.info("Gửi PaymentRequest đến RabbitMQ: {}", jsonMessage);
+            logger.info("Sent PaymentRequest to RabbitMQ: {}", jsonMessage);
             redisTemplate.opsForValue().set(todayKey, "exists", 1, TimeUnit.DAYS);
-            logger.info("Lưu tokenKey {} vào Redis cho hôm nay", paymentRequest.getTokenKey());
+            logger.info("Saved tokenKey {} in Redis for today", paymentRequest.getTokenKey());
             return new ResponseEntity<>(new PaymentResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.SUCCESS.getCode(), ErrorCodeEnum.SUCCESS.getMessage(), LocalDateTime.now()), HttpStatus.OK);
         } catch (JsonProcessingException e) {
-            logger.error("Lỗi khi gửi thông điệp đến RabbitMQ: {}", e.getMessage(), e);
-            return createErrorResponse(null, ErrorCodeEnum.JSON_PROCESSING_ERROR, "Lỗi xử lý JSON.");
+            logger.error("Error sending message to RabbitMQ: {}", e.getMessage(), e);
+            return createErrorResponse(null, ErrorCodeEnum.SYSTEM_ERROR, "System error occurred while processing JSON.");
         }
     }
 
