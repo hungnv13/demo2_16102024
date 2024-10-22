@@ -7,7 +7,7 @@ import vn.vnpay.demo2_16102024.constant.PaymentConstant;
 public class PaymentUtils {
 
     public static String formatPayDate(LocalDateTime payDate) {
-        if (payDate == null) {
+        if (null == payDate) {
             return null;
         }
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(PaymentConstant.TIMESTAMP_FORMATTER);
