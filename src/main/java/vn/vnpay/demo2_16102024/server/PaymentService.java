@@ -10,8 +10,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import vn.vnpay.demo2_16102024.config.RabbitConfig;
 import vn.vnpay.demo2_16102024.constant.ErrorCodeEnum;
+import vn.vnpay.demo2_16102024.constant.PaymentConstant;
 import vn.vnpay.demo2_16102024.dto.request.PaymentRequest;
 import vn.vnpay.demo2_16102024.dto.response.PaymentResponse;
 
@@ -50,11 +50,11 @@ public class PaymentService implements IPaymentService {
         }
 
         if (isRealAmountGreaterThanDebitAmount(paymentRequest)) {
-            return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, "The real amount must be less than or equal to the debit amount.");
+            return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, PaymentConstant.ERROR_REAL_AMOUNT_GREATER_THAN_DEBIT);
         }
 
         if (isPromotionCodeRequired(paymentRequest)) {
-            return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, "Invalid promotion code.");
+            return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, PaymentConstant.ERROR_PROMOTION_CODE);
         }
 
         String tokenKey = paymentRequest.getTokenKey();
@@ -62,7 +62,7 @@ public class PaymentService implements IPaymentService {
 
         if (redisTemplate.hasKey(todayKey)) {
             logger.warn("TokenKey {} already exists for today", tokenKey);
-            return createErrorResponse(tokenKey, ErrorCodeEnum.TOKEN_EXISTS_ERROR, "TokenKey already exists.");
+            return createErrorResponse(tokenKey, ErrorCodeEnum.TOKEN_EXISTS_ERROR, PaymentConstant.ERROR_TOKEN_EXISTS);
         }
 
         return sendMessageToQueue(paymentRequest, todayKey);
@@ -75,31 +75,33 @@ public class PaymentService implements IPaymentService {
             errors.put(error.getField(), error.getDefaultMessage());
         }
         logger.warn("Validation Error: {}", errors);
-        return createErrorResponse(null, ErrorCodeEnum.VALIDATION_ERROR, "Validation error occurred.");
+        return createErrorResponse(null, ErrorCodeEnum.VALIDATION_ERROR, PaymentConstant.ERROR_VALIDATION);
     }
 
     private boolean isRealAmountGreaterThanDebitAmount(PaymentRequest paymentRequest) {
-        return paymentRequest.getRealAmount() != null && paymentRequest.getDebitAmount() != null
-                && paymentRequest.getRealAmount() > paymentRequest.getDebitAmount();
+        return null != paymentRequest.getRealAmount() && null != paymentRequest.getDebitAmount()
+                && paymentRequest.getRealAmount().compareTo(paymentRequest.getDebitAmount()) > 0;
     }
 
     private boolean isPromotionCodeRequired(PaymentRequest paymentRequest) {
-        return paymentRequest.getPromotionCode() != null
+        return null != paymentRequest.getPromotionCode()
                 && !paymentRequest.getPromotionCode().trim().isEmpty()
-                && paymentRequest.getDebitAmount().equals(paymentRequest.getRealAmount());
+                && null != paymentRequest.getDebitAmount()
+                && null != paymentRequest.getRealAmount()
+                && 0 == paymentRequest.getDebitAmount().compareTo(paymentRequest.getRealAmount());
     }
 
     private ResponseEntity<?> sendMessageToQueue(PaymentRequest paymentRequest, String todayKey) {
         try {
             String jsonMessage = objectMapper.writeValueAsString(paymentRequest);
-            rabbitTemplate.convertAndSend(RabbitConfig.QUEUE_NAME, jsonMessage);
+            rabbitTemplate.convertAndSend(PaymentConstant.QUEUE_NAME, jsonMessage);
             logger.info("Sent PaymentRequest to RabbitMQ: {}", jsonMessage);
             redisTemplate.opsForValue().set(todayKey, "exists", 1, TimeUnit.DAYS);
             logger.info("Saved tokenKey {} in Redis for today", paymentRequest.getTokenKey());
             return new ResponseEntity<>(new PaymentResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.SUCCESS.getCode(), ErrorCodeEnum.SUCCESS.getMessage(), LocalDateTime.now()), HttpStatus.OK);
         } catch (JsonProcessingException e) {
             logger.error("Error sending message to RabbitMQ: {}", e.getMessage(), e);
-            return createErrorResponse(null, ErrorCodeEnum.SYSTEM_ERROR, "System error occurred while processing JSON.");
+            return createErrorResponse(null, ErrorCodeEnum.SYSTEM_ERROR, PaymentConstant.ERROR_SYSTEM);
         }
     }
 
@@ -108,3 +110,4 @@ public class PaymentService implements IPaymentService {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 }
+

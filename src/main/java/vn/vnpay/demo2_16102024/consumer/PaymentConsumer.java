@@ -59,7 +59,7 @@ public class PaymentConsumer {
             String sqlCheck = "SELECT COUNT(*) FROM payments WHERE tokenKey = ? AND DATE(payDate) = ?";
             Integer count = jdbcTemplate.queryForObject(sqlCheck, new Object[]{tokenKey, today}, Integer.class);
 
-            if (count != null && count > 0) {
+            if (null != count && 0 < count) {
                 logger.warn("TokenKey already exists for today: {}", tokenKey);
                 PaymentResponse response = receivePaymentResponse(paymentRequest, ErrorCodeEnum.TOKEN_EXISTS_ERROR);
                 sendResponse(response);
@@ -108,7 +108,7 @@ public class PaymentConsumer {
 
     private PaymentResponse receivePaymentResponse(PaymentRequest paymentRequest, ErrorCodeEnum errorCode) {
         PaymentResponse response = new PaymentResponse();
-        response.setTokenKey(paymentRequest != null ? paymentRequest.getTokenKey() : null);
+        response.setTokenKey(null != paymentRequest ? paymentRequest.getTokenKey() : null);
         response.setRespCode(errorCode.getCode());
         response.setStatus(errorCode.getMessage());
         logger.info("Created payment response: {}", response);
