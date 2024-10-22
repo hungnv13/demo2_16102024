@@ -7,17 +7,17 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitConfig {
-    public static final String QUEUE_NAME = "paymentQueue"; // Tên hàng đợi
-    public static final String EXCHANGE_NAME = "paymentExchange"; // Tên exchange
-    public static final String ROUTING_KEY = "paymentRoutingKey"; // Tên routing key
+    public static final String QUEUE_NAME = "paymentQueue";
+    public static final String EXCHANGE_NAME = "paymentExchange";
+    public static final String ROUTING_KEY = "paymentRoutingKey";
 
     @Bean
     public Queue paymentQueue() {
-        return new Queue(QUEUE_NAME, true); // Tạo hàng đợi
+        return new Queue(QUEUE_NAME, true);
     }
 
     @Bean
     public DirectExchange paymentExchange() {
-        return new DirectExchange(EXCHANGE_NAME); // Tạo exchange với kiểu direct
+        return new DirectExchange(EXCHANGE_NAME);
     }
 }

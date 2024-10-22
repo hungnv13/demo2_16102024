@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -15,8 +16,8 @@ import vn.vnpay.demo2_16102024.dto.request.PaymentRequest;
 import vn.vnpay.demo2_16102024.dto.response.PaymentResponse;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.TimeUnit;
 
 @Component
 public class PaymentConsumer {
@@ -48,23 +49,29 @@ public class PaymentConsumer {
     @RabbitListener(queues = RabbitConfig.QUEUE_NAME)
     public void receiveMessage(String message) {
         try {
-            logger.info("Received message: {}", message);
+            logger.info("Received message at {}: {}", LocalDateTime.now(), message);
             PaymentRequest paymentRequest = objectMapper.readValue(message, PaymentRequest.class);
             String tokenKey = paymentRequest.getTokenKey();
-            String todayKey = String.format("token:%s:%s", tokenKey, LocalDate.now().format(DateTimeFormatter.ISO_DATE));
 
-            if (redisTemplate.hasKey(todayKey)) {
+            String today = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+            logger.info("Checking for existing tokenKey: {} on date: {}", tokenKey, today);
+
+            String sqlCheck = "SELECT COUNT(*) FROM payments WHERE tokenKey = ? AND DATE(payDate) = ?";
+            Integer count = jdbcTemplate.queryForObject(sqlCheck, new Object[]{tokenKey, today}, Integer.class);
+
+            if (count != null && count > 0) {
                 logger.warn("TokenKey already exists for today: {}", tokenKey);
                 PaymentResponse response = receivePaymentResponse(paymentRequest, ErrorCodeEnum.TOKEN_EXISTS_ERROR);
                 sendResponse(response);
                 return;
             }
 
-            redisTemplate.opsForValue().set(todayKey, "exists", 1, TimeUnit.DAYS);
-            String sql = "INSERT INTO payments (tokenKey, apiID, mobile, bankCode, accountNo, payDate, additionalData, debitAmount, respCode, respDesc, traceTransfer, messageType, checkSum, orderCode, userName, realAmount, promotionCode, addValue) " +
+            String sqlInsert = "INSERT INTO payments (tokenKey, apiID, mobile, bankCode, accountNo, payDate, additionalData, debitAmount, respCode, respDesc, traceTransfer, messageType, checkSum, orderCode, userName, realAmount, promotionCode, addValue) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-            jdbcTemplate.update(sql,
+            logger.info("Inserting payment request for tokenKey: {} on date: {}", paymentRequest.getTokenKey(), paymentRequest.getPayDate());
+
+            jdbcTemplate.update(sqlInsert,
                     paymentRequest.getTokenKey(),
                     paymentRequest.getApiID(),
                     paymentRequest.getMobile(),
@@ -88,8 +95,12 @@ public class PaymentConsumer {
             logger.info("Inserted payment request: {}", paymentRequest);
             PaymentResponse paymentResponse = receivePaymentResponse(paymentRequest, ErrorCodeEnum.SUCCESS);
             sendResponse(paymentResponse);
+        } catch (DataAccessException e) {
+            logger.error("Database error while processing tokenKey: {}. Error: {}", e.getMessage(), e);
+            PaymentResponse errorResponse = receivePaymentResponse(null, ErrorCodeEnum.SYSTEM_ERROR);
+            sendResponse(errorResponse);
         } catch (Exception e) {
-            logger.error("Error processing payment request: {}", e.getMessage(), e);
+            logger.error("Error processing payment request for tokenKey: {}. Error: {}", e.getMessage(), e);
             PaymentResponse errorResponse = receivePaymentResponse(null, ErrorCodeEnum.SYSTEM_ERROR);
             sendResponse(errorResponse);
         }

@@ -23,8 +23,8 @@ public class PaymentController {
         this.iPaymentService = iPaymentService;
     }
 
-    @PostMapping("/validate")
-    public ResponseEntity<?> validatePayment(@Valid @RequestBody PaymentRequest paymentRequest, BindingResult bindingResult) {
+    @PostMapping("/process")
+    public ResponseEntity<?> processPayment(@Valid @RequestBody PaymentRequest paymentRequest, BindingResult bindingResult) {
         return iPaymentService.validatePayment(paymentRequest, bindingResult);
     }
 }

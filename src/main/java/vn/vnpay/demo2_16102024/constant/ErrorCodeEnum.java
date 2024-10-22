@@ -4,7 +4,7 @@ public enum ErrorCodeEnum {
     SUCCESS("00", "Success"),
     VALIDATION_ERROR("01", "Validation Error"),
     TOKEN_EXISTS_ERROR("02", "TokenKey already exists"),
-    SYSTEM_ERROR("03", "System Error");
+    SYSTEM_ERROR("99", "System Error");
 
     private final String code;
     private final String message;

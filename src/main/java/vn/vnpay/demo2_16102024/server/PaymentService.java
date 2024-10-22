@@ -45,32 +45,26 @@ public class PaymentService implements IPaymentService {
 
     @Override
     public ResponseEntity<?> validatePayment(@Valid PaymentRequest paymentRequest, BindingResult bindingResult) {
-        // Handle validation errors
         if (bindingResult.hasErrors()) {
             return handleValidationErrors(bindingResult);
         }
 
-        // Check if the real amount is greater than the debit amount
         if (isRealAmountGreaterThanDebitAmount(paymentRequest)) {
             return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, "The real amount must be less than or equal to the debit amount.");
         }
 
-        // Check if the promotion code is required and valid
         if (isPromotionCodeRequired(paymentRequest)) {
             return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, "Invalid promotion code.");
         }
 
-        // Generate today's token key
         String tokenKey = paymentRequest.getTokenKey();
         String todayKey = String.format("token:%s:%s", tokenKey, LocalDate.now().format(DateTimeFormatter.ISO_DATE));
 
-        // Check if the token already exists for today
         if (redisTemplate.hasKey(todayKey)) {
             logger.warn("TokenKey {} already exists for today", tokenKey);
             return createErrorResponse(tokenKey, ErrorCodeEnum.TOKEN_EXISTS_ERROR, "TokenKey already exists.");
         }
 
-        // Send the payment request to RabbitMQ and save the token key in Redis
         return sendMessageToQueue(paymentRequest, todayKey);
     }
 
