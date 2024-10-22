@@ -19,7 +19,7 @@ public class PaymentRequest implements Serializable {
     @Pattern(regexp = "^[0-9]{10}$", message = "mobile must be a 10-digit number")
     private String mobile;
 
-    private String bankCode = "970445"; // Mã ngân hàng mặc định
+    private String bankCode = "970445";
 
     @NotBlank(message = "accountNo must not be empty")
     private String accountNo;
