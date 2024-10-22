@@ -46,14 +46,22 @@ public class PaymentService implements IPaymentService {
     @Override
     public ResponseEntity<?> validatePayment(@Valid PaymentRequest paymentRequest, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
+            logger.warn("Validation errors found for payment request: {}", paymentRequest);
             return handleValidationErrors(bindingResult);
         }
 
         if (isRealAmountGreaterThanDebitAmount(paymentRequest)) {
+            logger.warn("Real amount is greater than debit amount. TokenKey: {}, RealAmount: {}, DebitAmount: {}",
+                    paymentRequest.getTokenKey(),
+                    paymentRequest.getRealAmount(),
+                    paymentRequest.getDebitAmount());
             return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, PaymentConstant.ERROR_REAL_AMOUNT_GREATER_THAN_DEBIT);
         }
 
         if (isPromotionCodeRequired(paymentRequest)) {
+            logger.warn("Invalid promotion code for payment request. TokenKey: {}, PromotionCode: {}",
+                    paymentRequest.getTokenKey(),
+                    paymentRequest.getPromotionCode());
             return createErrorResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.VALIDATION_ERROR, PaymentConstant.ERROR_PROMOTION_CODE);
         }
 
