@@ -111,6 +111,8 @@ public class PaymentConsumer {
         response.setTokenKey(null != paymentRequest ? paymentRequest.getTokenKey() : null);
         response.setRespCode(errorCode.getCode());
         response.setStatus(errorCode.getMessage());
+        //response.setPayDate(String.valueOf(LocalDateTime.now()));
+        response.setPayDate(LocalDateTime.now().toString());
         logger.info("Created payment response: {}", response);
         return response;
     }

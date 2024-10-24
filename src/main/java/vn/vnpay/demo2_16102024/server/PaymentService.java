@@ -67,11 +67,11 @@ public class PaymentService implements IPaymentService {
 
         String tokenKey = paymentRequest.getTokenKey();
         String todayKey = String.format("token:%s:%s", tokenKey, LocalDate.now().format(DateTimeFormatter.ISO_DATE));
-
         if (redisTemplate.hasKey(todayKey)) {
             logger.warn("TokenKey {} already exists for today", tokenKey);
             return createErrorResponse(tokenKey, ErrorCodeEnum.TOKEN_EXISTS_ERROR, PaymentConstant.ERROR_TOKEN_EXISTS);
         }
+
 
         return sendMessageToQueue(paymentRequest, todayKey);
     }
@@ -102,13 +102,22 @@ public class PaymentService implements IPaymentService {
     private ResponseEntity<?> sendMessageToQueue(PaymentRequest paymentRequest, String todayKey) {
         try {
             String jsonMessage = objectMapper.writeValueAsString(paymentRequest);
+
+            // Send the message to the RabbitMQ queue
             rabbitTemplate.convertAndSend(PaymentConstant.QUEUE_NAME, jsonMessage);
-            logger.info("Sent PaymentRequest to RabbitMQ: {}", jsonMessage);
+            logger.info("PaymentRequest sent to RabbitMQ: {}", jsonMessage);
+
+            // Save the todayKey in Redis with a 1-day expiration
             redisTemplate.opsForValue().set(todayKey, "exists", 1, TimeUnit.DAYS);
-            logger.info("Saved tokenKey {} in Redis for today", paymentRequest.getTokenKey());
-            return new ResponseEntity<>(new PaymentResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.SUCCESS.getCode(), ErrorCodeEnum.SUCCESS.getMessage(), LocalDateTime.now()), HttpStatus.OK);
+            logger.info("TokenKey {} saved in Redis for today", paymentRequest.getTokenKey());
+
+            // Return a successful response with details from paymentRequest
+            return new ResponseEntity<>(
+                    new PaymentResponse(paymentRequest.getTokenKey(), ErrorCodeEnum.SUCCESS.getCode(), ErrorCodeEnum.SUCCESS.getMessage(), LocalDateTime.now()),
+                    HttpStatus.OK
+            );
         } catch (JsonProcessingException e) {
-            logger.error("Error sending message to RabbitMQ: {}", e.getMessage(), e);
+            logger.error("Failed to send message to RabbitMQ: {}", e.getMessage(), e);
             return createErrorResponse(null, ErrorCodeEnum.SYSTEM_ERROR, PaymentConstant.ERROR_SYSTEM);
         }
     }
